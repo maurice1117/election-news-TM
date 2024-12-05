@@ -1,5 +1,7 @@
 import pandas as pd
 import re
+from transformers import pipeline
+
 
 def clean_text(text):
     text = re.sub(r"http\S+", "", text)  # 移除 URL
@@ -21,3 +23,9 @@ data['cleaned_text'] = data['text'].apply(clean_text)
 # 刪除空白或過短的行
 data = data[data['cleaned_text'].str.strip().str.len() > 5]
 
+# 加載 Hugging Face 的情感分析管道
+sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english", framework="tf")# 使用 TensorFlow
+
+data['sentiment'] = data['cleaned_text'].apply(lambda x: sentiment_pipeline(x)[0]['label'])
+
+print(data['sentiment'].value_counts())
