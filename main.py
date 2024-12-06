@@ -23,9 +23,15 @@ data['cleaned_text'] = data['text'].apply(clean_text)
 # 刪除空白或過短的行
 data = data[data['cleaned_text'].str.strip().str.len() > 5]
 
+data['text_length'] = data['cleaned_text'].apply(len)
+print(data['text_length'].describe())
+
+"""
 # 加載 Hugging Face 的情感分析管道
-sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english", framework="tf")# 使用 TensorFlow
+sentiment_pipeline = pipeline("sentiment-analysis", model="allenai/longformer-base-4096", framework="tf")# 使用 TensorFlow
 
 data['sentiment'] = data['cleaned_text'].apply(lambda x: sentiment_pipeline(x)[0]['label'])
 
-print(data['sentiment'].value_counts())
+
+print(data['sentiment'].value_counts(normalize=True))  # 顯示情感比例
+"""
