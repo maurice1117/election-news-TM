@@ -1,8 +1,8 @@
 import pandas as pd
 import re
-from transformers import pipeline
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-
+# 清理文本的函數
 def clean_text(text):
     text = re.sub(r"http\S+", "", text)  # 移除 URL
     text = re.sub(r"@\w+", "", text)    # 移除提及
@@ -10,28 +10,35 @@ def clean_text(text):
     text = text.lower().strip()  # 小寫化並去除多餘空格
     return text
 
-# 讀取csv檔
+# 使用 VADER 進行情感分析
+def analyze_sentiment_vader(text):
+    score = analyzer.polarity_scores(text)
+    if score['compound'] >= 0.05:
+        return "POSITIVE"
+    elif score['compound'] <= -0.05:
+        return "NEGATIVE"
+    else:
+        return "NEUTRAL"
+
+# 讀取 CSV 文件
 file_path = './src/top_election_posts_2024.csv'
 data = pd.read_csv(file_path, encoding='latin1')
 
-# 處理缺失值
+# 限制使用前 200 筆數據
+data = data.head(300)
+
+# 清理文本
 data = data.dropna(subset=['text'])
-
-# 清理資料
 data['cleaned_text'] = data['text'].apply(clean_text)
-
-# 刪除空白或過短的行
 data = data[data['cleaned_text'].str.strip().str.len() > 5]
 
-data['text_length'] = data['cleaned_text'].apply(len)
-print(data['text_length'].describe())
+# 初始化 VADER 分析器
+analyzer = SentimentIntensityAnalyzer()
 
-"""
-# 加載 Hugging Face 的情感分析管道
-sentiment_pipeline = pipeline("sentiment-analysis", model="allenai/longformer-base-4096", framework="tf")# 使用 TensorFlow
+# 添加情感分析列
+data['sentiment'] = data['cleaned_text'].apply(analyze_sentiment_vader)
 
-data['sentiment'] = data['cleaned_text'].apply(lambda x: sentiment_pipeline(x)[0]['label'])
-
-
-print(data['sentiment'].value_counts(normalize=True))  # 顯示情感比例
-"""
+# 計算情感分佈
+sentiment_counts = data['sentiment'].value_counts(normalize=True)
+print("Sentiment Distribution:")
+print(sentiment_counts)
